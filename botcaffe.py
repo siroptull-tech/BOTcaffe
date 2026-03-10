@@ -12,22 +12,18 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Загрузка переменных окружения
 load_dotenv()
 
-# Проверка токена
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("Токен бота не найден в .env файле!")
 
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# Инициализация бота
 bot = Bot(
     token=BOT_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
@@ -35,7 +31,6 @@ bot = Bot(
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# Подключение к БД
 class Database:
     def __init__(self):
         self.conn = sqlite3.connect("anticafe.db", check_same_thread=False)
@@ -154,7 +149,6 @@ class Database:
 
 db = Database()
 
-# Состояния FSM
 class Form(StatesGroup):
     phone = State()
     event_title = State()
@@ -164,11 +158,9 @@ class Form(StatesGroup):
     mailing_message = State()
     feedback = State()
 
-# Проверка прав администратора
 async def is_admin(user_id: int) -> bool:
     return db.is_admin(user_id)
 
-# ---- Основные команды ----
 
 @dp.message(F.text == "/start")
 async def cmd_start(message: types.Message):
@@ -193,7 +185,6 @@ async def process_phone(message: types.Message):
     )
     await show_main_menu(message)
 
-# ---- Программа лояльности ----
 
 async def show_main_menu(message: types.Message):
     visits_count = db.get_visits_count(message.from_user.id)
@@ -388,7 +379,6 @@ async def process_event_photo(message: types.Message, state: FSMContext):
 async def back_to_main_menu(message: types.Message):
     await show_main_menu(message)
 
-# ---- Дополнительные функции ----
 
 @dp.message(F.text == "📱 Контакты")
 async def show_contacts(message: types.Message):
@@ -408,16 +398,13 @@ async def start_feedback(message: types.Message, state: FSMContext):
 
 @dp.message(Form.feedback)
 async def process_feedback(message: types.Message, state: FSMContext):
-    # Здесь можно сохранить отзыв в базу или отправить администратору
     await message.answer("✅ Спасибо за ваш отзыв!")
     await state.clear()
     await show_main_menu(message)
 
-# ---- Запуск бота ----
-
 async def main():
     # Добавляем администратора при первом запуске
-    db.add_admin(586842186)  # Замените на ваш ID
+    db.add_admin()  # Напишите ваш ID
     
     await dp.start_polling(bot)
 
